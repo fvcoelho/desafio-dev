@@ -1,0 +1,234 @@
+@page "/"
+@inject HttpClient Http
+@inject IConfiguration Configuration
+
+<PageTitle>CNAB File Upload</PageTitle>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">CNAB File Upload</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label">Select CNAB File (.txt)</label>
+                        <InputFile id="fileInput" OnChange="@HandleFileSelected" class="form-control" accept=".txt" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <strong>Error:</strong> @errorMessage
+                        </div>
+                    }
+
+                    @if (uploadResult != null && uploadResult.Success)
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <h5>Upload Successful!</h5>
+                            <p class="mb-0">
+                                <strong>@uploadResult.TransactionsImported</strong> transactions imported from
+                                <strong>@uploadResult.StoresProcessed</strong> stores
+                            </p>
+                        </div>
+                    }
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg" @onclick="UploadFile" disabled="@(selectedFile == null || isUploading)">
+                            @if (isUploading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Uploading...</span>
+                            }
+                            else
+                            {
+                                <span>Upload CNAB File</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @if (stores != null && stores.Any())
+            {
+                <div class="card mt-4">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">Store Balances</h4>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var store in stores)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5 class="mb-0">@store.StoreName</h5>
+                                    <small class="text-muted">Owner: @store.OwnerName</small>
+                                </div>
+                                <div class="card-body">
+                                    <h6>Balance:
+                                        <span class="@(store.Balance >= 0 ? "text-success" : "text-danger")">
+                                            @store.Balance.ToString("C2")
+                                        </span>
+                                    </h6>
+                                    <p><strong>Transactions: @store.Transactions.Count</strong></p>
+
+                                    @if (expandedStores.Contains(store.StoreId))
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        <th>Date</th>
+                                                        <th>Time</th>
+                                                        <th>Value</th>
+                                                        <th>CPF</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var transaction in store.Transactions)
+                                                    {
+                                                        <tr>
+                                                            <td>@transaction.Type</td>
+                                                            <td>@transaction.Date.ToString("yyyy-MM-dd")</td>
+                                                            <td>@transaction.Time</td>
+                                                            <td class="@(transaction.SignedValue >= 0 ? "text-success" : "text-danger")">
+                                                                @transaction.SignedValue.ToString("C2")
+                                                            </td>
+                                                            <td>@transaction.Cpf</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <button class="btn btn-sm btn-secondary" @onclick="() => CollapseStore(store.StoreId)">
+                                            Hide Transactions
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-primary" @onclick="() => ExpandStore(store.StoreId)">
+                                            Show Transactions
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private IBrowserFile? selectedFile;
+    private bool isUploading = false;
+    private string? errorMessage;
+    private UploadResponse? uploadResult;
+    private List<StoreBalance>? stores;
+    private HashSet<int> expandedStores = new();
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        errorMessage = null;
+        uploadResult = null;
+    }
+
+    private async Task UploadFile()
+    {
+        if (selectedFile == null) return;
+
+        isUploading = true;
+        errorMessage = null;
+        uploadResult = null;
+        stores = null;
+
+        try
+        {
+            var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5118";
+
+            using var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024)); // 10MB max
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
+            content.Add(fileContent, "file", selectedFile.Name);
+
+            var response = await Http.PostAsync($"{apiBaseUrl}/api/cnab/upload", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                uploadResult = await response.Content.ReadFromJsonAsync<UploadResponse>();
+
+                if (uploadResult?.Success == true)
+                {
+                    await LoadStoreBalances();
+                }
+            }
+            else
+            {
+                errorMessage = $"Upload failed: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private async Task LoadStoreBalances()
+    {
+        try
+        {
+            var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5118";
+            stores = await Http.GetFromJsonAsync<List<StoreBalance>>($"{apiBaseUrl}/api/stores/balances");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading balances: {ex.Message}";
+        }
+    }
+
+    private void ExpandStore(int storeId)
+    {
+        expandedStores.Add(storeId);
+    }
+
+    private void CollapseStore(int storeId)
+    {
+        expandedStores.Remove(storeId);
+    }
+
+    public class UploadResponse
+    {
+        public bool Success { get; set; }
+        public int TransactionsImported { get; set; }
+        public int StoresProcessed { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
+    public class StoreBalance
+    {
+        public int StoreId { get; set; }
+        public string StoreName { get; set; } = string.Empty;
+        public string OwnerName { get; set; } = string.Empty;
+        public List<Transaction> Transactions { get; set; } = new();
+        public decimal Balance { get; set; }
+    }
+
+    public class Transaction
+    {
+        public string Type { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string Time { get; set; } = string.Empty;
+        public decimal Value { get; set; }
+        public decimal SignedValue { get; set; }
+        public string Cpf { get; set; } = string.Empty;
+        public string CardNumber { get; set; } = string.Empty;
+    }
+}

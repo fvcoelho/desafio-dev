@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesafioDev.Api", "DesafioDe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesafioDev.Api.Tests", "DesafioDev.Api.Tests\DesafioDev.Api.Tests.csproj", "{17B07C4A-2EE0-48A5-9AA4-52A4C81E0E6F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesafioDev.Web", "DesafioDev.Web\DesafioDev.Web.csproj", "{5B7D66B6-28BC-4362-ABF6-F4FCA16B9A09}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{17B07C4A-2EE0-48A5-9AA4-52A4C81E0E6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17B07C4A-2EE0-48A5-9AA4-52A4C81E0E6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17B07C4A-2EE0-48A5-9AA4-52A4C81E0E6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B7D66B6-28BC-4362-ABF6-F4FCA16B9A09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B7D66B6-28BC-4362-ABF6-F4FCA16B9A09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B7D66B6-28BC-4362-ABF6-F4FCA16B9A09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B7D66B6-28BC-4362-ABF6-F4FCA16B9A09}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
