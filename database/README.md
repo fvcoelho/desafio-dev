@@ -14,13 +14,13 @@ This directory contains SQL scripts for setting up and managing the PostgreSQL d
 
 ```bash
 # Connect to the PostgreSQL container
-docker exec -it desafio-dev-postgres psql -U user -d db
+docker exec -it desafio-dev-postgres psql -U user -d FinanceDB
 ```
 
 ### Using psql directly
 
 ```bash
-psql "postgresql://user:desafio@localhost:5432/db"
+psql "postgresql://user:desafio@localhost:5432/FinanceDB"
 ```
 
 ## Scripts
@@ -50,20 +50,20 @@ Drops all tables and data.
 
 ```bash
 # Create schema
-docker exec -i desafio-dev-postgres psql -U user -d db < database/create-schema.sql
+docker exec -i desafio-dev-postgres psql -U user -d FinanceDB < database/create-schema.sql
 
 # Drop schema (WARNING: deletes all data)
-docker exec -i desafio-dev-postgres psql -U user -d db < database/drop-schema.sql
+docker exec -i desafio-dev-postgres psql -U user -d FinanceDB < database/drop-schema.sql
 ```
 
 ### Option 2: Using psql directly
 
 ```bash
 # Create schema
-psql "postgresql://user:desafio@localhost:5432/db" -f database/create-schema.sql
+psql "postgresql://user:desafio@localhost:5432/FinanceDB" -f database/create-schema.sql
 
 # Drop schema (WARNING: deletes all data)
-psql "postgresql://user:desafio@localhost:5432/db" -f database/drop-schema.sql
+psql "postgresql://user:desafio@localhost:5432/FinanceDB" -f database/drop-schema.sql
 ```
 
 ### Option 3: From within psql
