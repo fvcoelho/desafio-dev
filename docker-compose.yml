@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:17-alpine
+    container_name: financeapp-postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: desafio
+      POSTGRES_DB: FinanceDB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/create-schema.sql:/docker-entrypoint-initdb.d/create-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d FinanceDB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - financeapp-network
+
+  # CNAB API
+  api:
+    build:
+      context: .
+      dockerfile: DesafioDev.Api/Dockerfile
+    container_name: financeapp-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=database;Port=5432;Database=FinanceDB;Username=user;Password=desafio
+      - Storage__UseInMemory=false
+    ports:
+      - "5118:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - financeapp-network
+    restart: unless-stopped
+
+  # Blazor Web UI
+  web:
+    build:
+      context: .
+      dockerfile: DesafioDev.Web/Dockerfile
+    container_name: financeapp-web
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ApiSettings__BaseUrl=http://api:8080
+    ports:
+      - "5000:8080"
+    depends_on:
+      - api
+    networks:
+      - financeapp-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  financeapp-network:
+    driver: bridge
