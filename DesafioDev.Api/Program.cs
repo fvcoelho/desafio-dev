@@ -31,7 +31,7 @@ builder.Services.AddSingleton<ICnabParser, CnabParser>();
 if (storageOptions.UseInMemory)
 {
     builder.Services.AddSingleton<ITransactionService, InMemoryTransactionService>();
-    Console.WriteLine($"[INFO] Using storage: {storageOptions.Type} (In-Memory)");
+    Console.WriteLine("[INFO] Using In-Memory storage");
 }
 else
 {
@@ -42,7 +42,7 @@ else
 
     // For now, fall back to in-memory
     builder.Services.AddSingleton<ITransactionService, InMemoryTransactionService>();
-    Console.WriteLine($"[WARNING] PostgreSQL storage not yet implemented. Falling back to In-Memory storage.");
+    Console.WriteLine("[WARNING] PostgreSQL storage not yet implemented. Falling back to In-Memory storage.");
 }
 
 // Add CORS (optional, for frontend integration)
