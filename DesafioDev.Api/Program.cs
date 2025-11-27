@@ -1,8 +1,14 @@
+using DesafioDev.Api.Configuration;
 using DesafioDev.Api.Endpoints;
 using DesafioDev.Api.Services;
 using DesafioDev.Api.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure storage options
+var storageOptions = builder.Configuration
+    .GetSection(StorageOptions.SectionName)
+    .Get<StorageOptions>() ?? new StorageOptions();
 
 // Add services to the container
 builder.Services.AddEndpointsApiExplorer();
@@ -19,7 +25,24 @@ builder.Services.AddSwaggerGen(options =>
 // Register application services
 builder.Services.AddSingleton<ICnabLineParser, CnabLineParser>();
 builder.Services.AddSingleton<ICnabParser, CnabParser>();
-builder.Services.AddSingleton<ITransactionService, InMemoryTransactionService>();
+
+// Register storage service based on configuration
+if (storageOptions.UseInMemory)
+{
+    builder.Services.AddSingleton<ITransactionService, InMemoryTransactionService>();
+    Console.WriteLine($"[INFO] Using storage: {storageOptions.Type} (In-Memory)");
+}
+else
+{
+    // TODO: Register PostgreSQL implementation when available
+    // builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    //     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // builder.Services.AddScoped<ITransactionService, PostgresTransactionService>();
+
+    // For now, fall back to in-memory
+    builder.Services.AddSingleton<ITransactionService, InMemoryTransactionService>();
+    Console.WriteLine($"[WARNING] PostgreSQL storage not yet implemented. Falling back to In-Memory storage.");
+}
 
 // Add CORS (optional, for frontend integration)
 builder.Services.AddCors(options =>
