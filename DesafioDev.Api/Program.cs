@@ -2,6 +2,7 @@ using DesafioDev.Api.Configuration;
 using DesafioDev.Api.Endpoints;
 using DesafioDev.Api.Services;
 using DesafioDev.Api.Services.Interfaces;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,15 +69,57 @@ app.UseHttpsRedirection();
 app.UseCors();
 
 // Map endpoints
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
+app.MapGet("/health", async (IConfiguration configuration) =>
+{
+    var healthStatus = new
+    {
+        status = "healthy",
+        database = await CheckDatabaseConnection(configuration, storageOptions)
+    };
+    return Results.Ok(healthStatus);
+})
     .WithName("HealthCheck")
     .WithTags("Health")
+    .WithDescription("Health check endpoint that verifies API and database connectivity")
     .WithOpenApi();
 
 app.MapCnabEndpoints();
 app.MapStoreEndpoints();
 
 app.Run();
+
+// Helper method to check database connection
+static async Task<string> CheckDatabaseConnection(IConfiguration configuration, StorageOptions storageOptions)
+{
+    // If using in-memory storage, skip database check
+    if (storageOptions.UseInMemory)
+    {
+        return "N/A (using in-memory storage)";
+    }
+
+    try
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            return "error (no connection string)";
+        }
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        // Test with a simple query
+        await using var command = new NpgsqlCommand("SELECT 1", connection);
+        await command.ExecuteScalarAsync();
+
+        return "ok";
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] Database health check failed: {ex.Message}");
+        return $"error ({ex.Message})";
+    }
+}
 
 // Make the Program class accessible to WebApplicationFactory for integration testing
 public partial class Program { }
