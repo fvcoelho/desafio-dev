@@ -51,6 +51,17 @@
                                 <span>Upload CNAB File</span>
                             }
                         </button>
+                        <button class="btn btn-danger" @onclick="ClearData" disabled="@isClearing">
+                            @if (isClearing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Clearing...</span>
+                            }
+                            else
+                            {
+                                <span>Clear All Data</span>
+                            }
+                        </button>
                     </div>
                 </div>
             </div>
@@ -129,6 +140,7 @@
 @code {
     private IBrowserFile? selectedFile;
     private bool isUploading = false;
+    private bool isClearing = false;
     private string? errorMessage;
     private UploadResponse? uploadResult;
     private List<StoreBalance>? stores;
@@ -207,6 +219,38 @@
     private void CollapseStore(int storeId)
     {
         expandedStores.Remove(storeId);
+    }
+
+    private async Task ClearData()
+    {
+        isClearing = true;
+        errorMessage = null;
+
+        try
+        {
+            var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5118";
+            var response = await Http.DeleteAsync($"{apiBaseUrl}/api/cnab/clear");
+
+            if (response.IsSuccessStatusCode)
+            {
+                stores = null;
+                uploadResult = null;
+                selectedFile = null;
+                expandedStores.Clear();
+            }
+            else
+            {
+                errorMessage = $"Clear failed: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isClearing = false;
+        }
     }
 
     public class UploadResponse
