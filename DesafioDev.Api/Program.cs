@@ -17,7 +17,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
     {
-        Title = "CNAB File Parser API",
+        Title = "Finance API",
         Version = "v1",
         Description = "API for parsing and managing CNAB financial transaction files"
     });
@@ -63,6 +63,9 @@ app.UseHttpsRedirection();
 app.UseCors();
 
 // Map endpoints
+app.MapGet("/", () => Results.Redirect("/swagger"))
+    .ExcludeFromDescription();
+
 app.MapGet("/health", async (IConfiguration configuration) =>
 {
     var healthStatus = new
