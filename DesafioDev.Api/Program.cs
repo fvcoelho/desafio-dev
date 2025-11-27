@@ -54,3 +54,6 @@ app.MapCnabEndpoints();
 app.MapStoreEndpoints();
 
 app.Run();
+
+// Make the Program class accessible to WebApplicationFactory for integration testing
+public partial class Program { }
