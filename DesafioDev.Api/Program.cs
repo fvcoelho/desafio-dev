@@ -1,13 +1,40 @@
+using DesafioDev.Api.Endpoints;
+using DesafioDev.Api.Services;
+using DesafioDev.Api.Services.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Add services to the container
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "CNAB File Parser API",
+        Version = "v1",
+        Description = "API for parsing and managing CNAB financial transaction files"
+    });
+});
+
+// Register application services
+builder.Services.AddSingleton<ICnabLineParser, CnabLineParser>();
+builder.Services.AddSingleton<ICnabParser, CnabParser>();
+builder.Services.AddSingleton<ITransactionService, InMemoryTransactionService>();
+
+// Add CORS (optional, for frontend integration)
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -15,34 +42,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
 
+// Map endpoints
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }))
-.WithName("HealthCheck")
-.WithOpenApi();
+    .WithName("HealthCheck")
+    .WithTags("Health")
+    .WithOpenApi();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.MapCnabEndpoints();
+app.MapStoreEndpoints();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
