@@ -27,6 +27,10 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
+# Test Results
+TestResults/
+**/TestResults/
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
