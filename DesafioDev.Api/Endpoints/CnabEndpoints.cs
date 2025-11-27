@@ -1,5 +1,6 @@
 using DesafioDev.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 
 namespace DesafioDev.Api.Endpoints;
 
@@ -21,10 +22,37 @@ public static class CnabEndpoints
             .WithName("UploadCnabFile")
             .WithSummary("Upload and process a CNAB file")
             .WithDescription("Uploads a CNAB file, parses its contents, and stores the transactions in memory")
-            .Accepts<IFormFile>("multipart/form-data")
             .Produces(200)
             .Produces(400)
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .WithOpenApi(operation =>
+            {
+                operation.RequestBody = new OpenApiRequestBody
+                {
+                    Required = true,
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["multipart/form-data"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["file"] = new OpenApiSchema
+                                    {
+                                        Type = "string",
+                                        Format = "binary",
+                                        Description = "CNAB file to upload (.txt, .cnab, or .dat)"
+                                    }
+                                },
+                                Required = new HashSet<string> { "file" }
+                            }
+                        }
+                    }
+                };
+                return operation;
+            });
 
         group.MapDelete("/clear", ClearData)
             .WithName("ClearData")
@@ -34,10 +62,19 @@ public static class CnabEndpoints
     }
 
     private static async Task<IResult> UploadCnabFile(
-        [FromForm] IFormFile file,
+        HttpRequest request,
         ITransactionService transactionService,
         ILogger<ITransactionService> logger)
     {
+        if (!request.HasFormContentType)
+        {
+            logger.LogWarning("Upload attempted without form content type");
+            return Results.BadRequest(new { error = "Request must be multipart/form-data" });
+        }
+
+        var form = await request.ReadFormAsync();
+        var file = form.Files.GetFile("file");
+
         if (file == null || file.Length == 0)
         {
             logger.LogWarning("Upload attempted with no file or empty file");
