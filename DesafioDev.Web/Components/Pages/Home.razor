@@ -15,6 +15,9 @@
                     <div class="mb-3">
                         <label for="fileInput" class="form-label">Select CNAB File (.txt)</label>
                         <InputFile id="fileInput" OnChange="@HandleFileSelected" class="form-control" accept=".txt" />
+                        <div class="form-text">
+                            Don't have a CNAB file? <a href="/CNAB.txt" download="CNAB.txt" class="text-decoration-none">Download a sample file</a>
+                        </div>
                     </div>
 
                     @if (!string.IsNullOrEmpty(errorMessage))
