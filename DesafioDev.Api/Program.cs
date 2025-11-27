@@ -35,14 +35,8 @@ if (storageOptions.UseInMemory)
 }
 else
 {
-    // TODO: Register PostgreSQL implementation when available
-    // builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    //     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-    // builder.Services.AddScoped<ITransactionService, PostgresTransactionService>();
-
-    // For now, fall back to in-memory
-    builder.Services.AddSingleton<ITransactionService, InMemoryTransactionService>();
-    Console.WriteLine("[WARNING] PostgreSQL storage not yet implemented. Falling back to In-Memory storage.");
+    builder.Services.AddScoped<ITransactionService, PostgresTransactionService>();
+    Console.WriteLine("[INFO] Using PostgreSQL storage");
 }
 
 // Add CORS (optional, for frontend integration)
