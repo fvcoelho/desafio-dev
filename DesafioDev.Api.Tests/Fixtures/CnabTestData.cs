@@ -19,9 +19,9 @@ public static class CnabTestData
 
     // Invalid line examples
     public const string LineTooShort = "12345";
-    public const string LineTooLong = "1".PadRight(81, '0');
-    public const string InvalidTypeCharacter = "X".PadRight(80, '0');
-    public const string InvalidTypeLine = "0".PadRight(80, '0');
+    public static readonly string LineTooLong = new string('0', 81);
+    public static readonly string InvalidTypeCharacter = "X" + new string('0', 79);
+    public static readonly string InvalidTypeLine = "0" + new string('0', 79);
 
     /// <summary>
     /// Creates a test transaction with default or custom values
