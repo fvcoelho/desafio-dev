@@ -8,14 +8,15 @@ namespace DesafioDev.Api.Tests.Fixtures;
 public static class CnabTestData
 {
     // Valid CNAB line examples (80 characters each)
+    // Format: Type(1) + Date(8) + Value(10) + CPF(11) + Card(12) + Time(6) + Owner(14) + Store(18) = 80
     public const string ValidDebitLine =
-        "3201903011234567890096206760171234567890123153453JOÃO MACEDO   BAR DO JOÃO         ";
+        "320190301000012340009620676017123456789012153453JOÃO MACEDO   BAR DO JOÃO       ";
 
     public const string ValidCreditLine =
-        "4201903011234567890556418150631234567890123100000MARIA JOSEFINA LOJA DO Ó - FILIAL ";
+        "420190301000012340055641815063123456789012100000MARIA JOSEFINALOJA DO Ó - FILIAL";
 
     public const string ValidBoletoLine =
-        "2201903010000011200096206760171234567890123153000JOÃO MACEDO   BAR DO JOÃO         ";
+        "220190301000011200009620676017123456789012153000JOÃO MACEDO   BAR DO JOÃO       ";
 
     // Invalid line examples
     public const string LineTooShort = "12345";
@@ -69,7 +70,8 @@ public static class CnabTestData
     }
 
     /// <summary>
-    /// Creates a valid CNAB line with specified values
+    /// Creates a valid CNAB line with specified values (exactly 80 characters)
+    /// Format: Type(1) + Date(8) + Value(10) + CPF(11) + Card(12) + Time(6) + Owner(14) + Store(18) = 80
     /// </summary>
     public static string CreateValidLine(
         int type = 3,
@@ -81,6 +83,15 @@ public static class CnabTestData
         string owner = "JOÃO MACEDO   ",
         string store = "BAR DO JOÃO         ")
     {
+        // Ensure proper lengths
+        date = date.PadRight(8).Substring(0, 8);
+        value = value.PadLeft(10, '0').Substring(0, 10);
+        cpf = cpf.PadRight(11).Substring(0, 11);
+        card = card.PadRight(12).Substring(0, 12);
+        time = time.PadRight(6).Substring(0, 6);
+        owner = owner.PadRight(14).Substring(0, 14);
+        store = store.PadRight(18).Substring(0, 18);
+
         return $"{type}{date}{value}{cpf}{card}{time}{owner}{store}";
     }
 }
