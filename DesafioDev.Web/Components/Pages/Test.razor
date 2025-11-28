@@ -1,6 +1,7 @@
 @page "/test"
 @rendermode InteractiveServer
 @using System.Diagnostics
+@inject IConfiguration Configuration
 
 <PageTitle>Test Runner</PageTitle>
 
@@ -223,6 +224,20 @@
 
     private string? FindSolutionPath()
     {
+        // First check environment variable
+        var envPath = Environment.GetEnvironmentVariable("TEST_SOLUTION_PATH");
+        if (!string.IsNullOrEmpty(envPath) && Directory.Exists(envPath))
+        {
+            return envPath;
+        }
+
+        // Then check configuration
+        var configPath = Configuration["TestRunner:SolutionPath"];
+        if (!string.IsNullOrEmpty(configPath) && Directory.Exists(configPath))
+        {
+            return configPath;
+        }
+
         var currentDir = AppContext.BaseDirectory;
 
         // Navigate up to find the solution directory
