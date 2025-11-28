@@ -1,0 +1,302 @@
+@page "/test"
+@rendermode InteractiveServer
+@using System.Diagnostics
+
+<PageTitle>Test Runner</PageTitle>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Test Runner</h3>
+                    @if (lastRunTime != null)
+                    {
+                        <small>Last run: @lastRunTime</small>
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 mb-3">
+                        <button class="btn btn-primary btn-lg" @onclick="RunAllTests" disabled="@isRunning">
+                            @if (isRunning)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>Running Tests...</span>
+                            }
+                            else
+                            {
+                                <span>Run All Tests</span>
+                            }
+                        </button>
+                        <button class="btn btn-outline-secondary btn-lg" @onclick="RunUnitTests" disabled="@isRunning">
+                            Run Unit Tests
+                        </button>
+                        <button class="btn btn-outline-secondary btn-lg" @onclick="RunIntegrationTests" disabled="@isRunning">
+                            Run Integration Tests
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <strong>Error:</strong> @errorMessage
+                        </div>
+                    }
+
+                    @if (testSummary != null)
+                    {
+                        <div class="alert @(testSummary.Failed > 0 ? "alert-danger" : "alert-success")" role="alert">
+                            <h5>Test Results</h5>
+                            <div class="d-flex gap-4">
+                                <span><strong class="text-success">Passed:</strong> @testSummary.Passed</span>
+                                <span><strong class="text-danger">Failed:</strong> @testSummary.Failed</span>
+                                <span><strong class="text-muted">Skipped:</strong> @testSummary.Skipped</span>
+                                <span><strong>Total:</strong> @testSummary.Total</span>
+                                <span><strong>Duration:</strong> @testSummary.Duration</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(htmlReport))
+            {
+                <div class="card mt-4">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Test Report</h4>
+                        <button class="btn btn-sm btn-light" @onclick="ToggleReport">
+                            @(showReport ? "Hide Report" : "Show Report")
+                        </button>
+                    </div>
+                    @if (showReport)
+                    {
+                        <div class="card-body p-0">
+                            <iframe srcdoc="@htmlReport" style="width: 100%; height: 600px; border: none;"></iframe>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(consoleOutput))
+            {
+                <div class="card mt-4">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Console Output</h4>
+                        <button class="btn btn-sm btn-light" @onclick="ToggleConsole">
+                            @(showConsole ? "Hide Console" : "Show Console")
+                        </button>
+                    </div>
+                    @if (showConsole)
+                    {
+                        <div class="card-body bg-dark">
+                            <pre class="text-light mb-0" style="max-height: 400px; overflow-y: auto; font-size: 12px;">@consoleOutput</pre>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isRunning = false;
+    private string? errorMessage;
+    private string? htmlReport;
+    private string? consoleOutput;
+    private string? lastRunTime;
+    private bool showReport = true;
+    private bool showConsole = false;
+    private TestSummary? testSummary;
+
+    private async Task RunAllTests()
+    {
+        await ExecuteTests("");
+    }
+
+    private async Task RunUnitTests()
+    {
+        await ExecuteTests("--filter \"FullyQualifiedName~Services\"");
+    }
+
+    private async Task RunIntegrationTests()
+    {
+        await ExecuteTests("--filter \"FullyQualifiedName~Integration\"");
+    }
+
+    private async Task ExecuteTests(string filter)
+    {
+        isRunning = true;
+        errorMessage = null;
+        htmlReport = null;
+        consoleOutput = null;
+        testSummary = null;
+        StateHasChanged();
+
+        try
+        {
+            var solutionPath = FindSolutionPath();
+            if (string.IsNullOrEmpty(solutionPath))
+            {
+                errorMessage = "Could not find solution directory";
+                return;
+            }
+
+            var reportPath = Path.Combine(solutionPath, "TestResults", "TestReport.html");
+
+            // Delete old report if exists
+            if (File.Exists(reportPath))
+            {
+                File.Delete(reportPath);
+            }
+
+            var arguments = $"test {filter} --logger \"html;LogFileName=TestReport.html\" --results-directory \"{Path.Combine(solutionPath, "TestResults")}\" --no-restore";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "dotnet",
+                Arguments = arguments,
+                WorkingDirectory = solutionPath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = processInfo };
+            var output = new System.Text.StringBuilder();
+            var error = new System.Text.StringBuilder();
+
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                {
+                    output.AppendLine(e.Data);
+                }
+            };
+
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                {
+                    error.AppendLine(e.Data);
+                }
+            };
+
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            await process.WaitForExitAsync();
+
+            consoleOutput = output.ToString();
+            if (error.Length > 0)
+            {
+                consoleOutput += "\n--- Errors ---\n" + error.ToString();
+            }
+
+            // Parse test summary from output
+            testSummary = ParseTestSummary(consoleOutput);
+
+            // Read HTML report
+            if (File.Exists(reportPath))
+            {
+                htmlReport = await File.ReadAllTextAsync(reportPath);
+            }
+
+            lastRunTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            if (process.ExitCode != 0 && testSummary?.Failed == 0)
+            {
+                errorMessage = $"Test process exited with code {process.ExitCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error running tests: {ex.Message}";
+        }
+        finally
+        {
+            isRunning = false;
+            StateHasChanged();
+        }
+    }
+
+    private string? FindSolutionPath()
+    {
+        var currentDir = AppContext.BaseDirectory;
+
+        // Navigate up to find the solution directory
+        while (!string.IsNullOrEmpty(currentDir))
+        {
+            if (Directory.GetFiles(currentDir, "*.sln").Any())
+            {
+                return currentDir;
+            }
+            currentDir = Directory.GetParent(currentDir)?.FullName;
+        }
+
+        // Fallback: try common development paths
+        var possiblePaths = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", ".."),
+            "/Users/fvcoelho/Working/desafio-dev"
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            var fullPath = Path.GetFullPath(path);
+            if (Directory.Exists(fullPath) && Directory.GetFiles(fullPath, "*.sln").Any())
+            {
+                return fullPath;
+            }
+        }
+
+        return null;
+    }
+
+    private TestSummary? ParseTestSummary(string output)
+    {
+        try
+        {
+            // Parse line like: "Passed!  - Failed:     0, Passed:   100, Skipped:     0, Total:   100, Duration: 2 s"
+            var match = System.Text.RegularExpressions.Regex.Match(
+                output,
+                @"Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+),\s*Duration:\s*(.+?)\s*-");
+
+            if (match.Success)
+            {
+                return new TestSummary
+                {
+                    Failed = int.Parse(match.Groups[1].Value),
+                    Passed = int.Parse(match.Groups[2].Value),
+                    Skipped = int.Parse(match.Groups[3].Value),
+                    Total = int.Parse(match.Groups[4].Value),
+                    Duration = match.Groups[5].Value.Trim()
+                };
+            }
+        }
+        catch { }
+
+        return null;
+    }
+
+    private void ToggleReport()
+    {
+        showReport = !showReport;
+    }
+
+    private void ToggleConsole()
+    {
+        showConsole = !showConsole;
+    }
+
+    private class TestSummary
+    {
+        public int Passed { get; set; }
+        public int Failed { get; set; }
+        public int Skipped { get; set; }
+        public int Total { get; set; }
+        public string Duration { get; set; } = "";
+    }
+}
