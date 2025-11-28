@@ -9,7 +9,28 @@
 
 ### 1. Run Tests
 
+Before running tests, configure the storage mode in `DesafioDev.Api/appsettings.json`:
+
+```json
+{
+  "Storage": {
+    "UseInMemory": true   // Set to true for tests without database
+  }
+}
+```
+
+**Option A: Run tests with in-memory storage (no database required)**
 ```bash
+# Ensure UseInMemory is set to true in appsettings.json
+dotnet test
+```
+
+**Option B: Run tests with PostgreSQL (requires database running)**
+```bash
+# Start database first
+docker-compose up -d database
+
+# Ensure UseInMemory is set to false in appsettings.json
 dotnet test
 ```
 
