@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject HttpClient Http
 @inject IConfiguration Configuration
+@using System.Globalization
 
 <PageTitle>CNAB File Upload</PageTitle>
 
@@ -83,7 +84,7 @@
                                 <div class="card-body">
                                     <h6>Balance:
                                         <span class="@(store.Balance >= 0 ? "text-success" : "text-danger")">
-                                            @store.Balance.ToString("C2")
+                                            @store.Balance.ToString("C2", new CultureInfo("pt-BR"))
                                         </span>
                                     </h6>
                                     <p><strong>Transactions: @store.Transactions.Count</strong></p>
@@ -109,7 +110,7 @@
                                                             <td>@transaction.Date.ToString("yyyy-MM-dd")</td>
                                                             <td>@transaction.Time</td>
                                                             <td class="@(transaction.SignedValue >= 0 ? "text-success" : "text-danger")">
-                                                                @transaction.SignedValue.ToString("C2")
+                                                                @transaction.SignedValue.ToString("C2", new CultureInfo("pt-BR"))
                                                             </td>
                                                             <td>@transaction.Cpf</td>
                                                         </tr>

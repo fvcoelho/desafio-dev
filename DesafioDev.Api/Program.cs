@@ -82,6 +82,7 @@ app.MapGet("/health", async (IConfiguration configuration) =>
 
 app.MapCnabEndpoints();
 app.MapStoreEndpoints();
+app.MapTableViewerEndpoints();
 
 app.Run();
 
