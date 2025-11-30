@@ -13,6 +13,7 @@ RUN dotnet restore "DesafioDev.Api.Tests/DesafioDev.Api.Tests.csproj"
 COPY DesafioDev.Web/ DesafioDev.Web/
 COPY DesafioDev.Api/ DesafioDev.Api/
 COPY DesafioDev.Api.Tests/ DesafioDev.Api.Tests/
+COPY CNAB.txt CNAB.txt
 
 # Test stage - run tests and generate HTML report
 FROM build AS test

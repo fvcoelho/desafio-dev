@@ -6,6 +6,8 @@ namespace DesafioDev.Api.Tests.Integration;
 
 public abstract class IntegrationTestBase : IAsyncLifetime
 {
+    private const string TestApiKey = "test-api-key-for-integration-tests";
+
     protected readonly ApiWebApplicationFactory Factory;
     protected readonly HttpClient Client;
 
@@ -13,6 +15,7 @@ public abstract class IntegrationTestBase : IAsyncLifetime
     {
         Factory = new ApiWebApplicationFactory();
         Client = Factory.CreateClient();
+        Client.DefaultRequestHeaders.Add("X-API-Key", TestApiKey);
     }
 
     // Clear data before each test
