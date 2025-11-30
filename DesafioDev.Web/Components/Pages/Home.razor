@@ -147,6 +147,11 @@
     private List<StoreBalance>? stores;
     private HashSet<int> expandedStores = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStoreBalances();
+    }
+
     private void HandleFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
