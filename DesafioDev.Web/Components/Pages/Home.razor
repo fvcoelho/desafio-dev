@@ -14,6 +14,13 @@
                     <h3 class="mb-0">CNAB File Upload</h3>
                 </div>
                 <div class="card-body">
+                <div class="mb-3">
+                        <label for="apiKeyInput" class="form-label">API Key</label>
+                        <input id="apiKeyInput" @bind="apiKey" class="form-control" placeholder="Enter API Key" />
+                        <div class="form-text">
+                            Required for upload and clear operations. Default: <code>financeapp-secret-key</code>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="fileInput" class="form-label">Select CNAB File (.txt)</label>
                         <InputFile id="fileInput" OnChange="@HandleFileSelected" class="form-control" accept=".txt" />
@@ -40,6 +47,14 @@
                         </div>
                     }
 
+                    @if (clearSuccess)
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <h5>Data Cleared!</h5>
+                            <p class="mb-0">All transactions and stores have been cleared successfully.</p>
+                        </div>
+                    }
+
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary btn-lg" @onclick="UploadFile" disabled="@(selectedFile == null || isUploading)">
                             @if (isUploading)
@@ -52,7 +67,7 @@
                                 <span>Upload File</span>
                             }
                         </button>
-                        <button class="btn btn-danger" @onclick="ClearData" disabled="@isClearing">
+                        <button class="btn btn-danger btn-lg" @onclick="ClearData" disabled="@isClearing">
                             @if (isClearing)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -142,13 +157,16 @@
     private IBrowserFile? selectedFile;
     private bool isUploading = false;
     private bool isClearing = false;
+    private bool clearSuccess = false;
     private string? errorMessage;
     private UploadResponse? uploadResult;
     private List<StoreBalance>? stores;
     private HashSet<int> expandedStores = new();
+    private string apiKey = "financeapp-secret-key";
 
     protected override async Task OnInitializedAsync()
     {
+        apiKey = Configuration["ApiSettings:ApiKey"] ?? "financeapp-secret-key";
         await LoadStoreBalances();
     }
 
@@ -168,6 +186,7 @@
         errorMessage = null;
         uploadResult = null;
         stores = null;
+        clearSuccess = false;
 
         try
         {
@@ -178,7 +197,11 @@
             fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
             content.Add(fileContent, "file", selectedFile.Name);
 
-            var response = await Http.PostAsync($"{apiBaseUrl}/api/cnab/upload", content);
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{apiBaseUrl}/api/cnab/upload");
+            request.Headers.Add("X-API-Key", apiKey);
+            request.Content = content;
+
+            var response = await Http.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
             {
@@ -231,11 +254,16 @@
     {
         isClearing = true;
         errorMessage = null;
+        clearSuccess = false;
 
         try
         {
             var apiBaseUrl = Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5118";
-            var response = await Http.DeleteAsync($"{apiBaseUrl}/api/cnab/clear");
+
+            using var request = new HttpRequestMessage(HttpMethod.Delete, $"{apiBaseUrl}/api/cnab/clear");
+            request.Headers.Add("X-API-Key", apiKey);
+
+            var response = await Http.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
             {
@@ -243,6 +271,7 @@
                 uploadResult = null;
                 selectedFile = null;
                 expandedStores.Clear();
+                clearSuccess = true;
             }
             else
             {

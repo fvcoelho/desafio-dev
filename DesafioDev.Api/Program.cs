@@ -1,7 +1,9 @@
+using DesafioDev.Api.Authentication;
 using DesafioDev.Api.Configuration;
 using DesafioDev.Api.Endpoints;
 using DesafioDev.Api.Services;
 using DesafioDev.Api.Services.Interfaces;
+using Microsoft.OpenApi.Models;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +23,37 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description = "API for parsing and managing CNAB financial transaction files"
     });
+
+    // Add API Key authentication to Swagger
+    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = "X-API-Key",
+        Description = "API Key authentication. Enter your API key in the text box. (X-API-Key: financeapp-secret-key)"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
+
+// Add API Key authentication
+builder.Services.AddAuthentication("ApiKey")
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", null);
+
+builder.Services.AddAuthorization();
 
 // Register application services
 builder.Services.AddSingleton<ICnabLineParser, CnabLineParser>();
@@ -61,6 +93,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map endpoints
 app.MapGet("/", () => Results.Redirect("/swagger"))

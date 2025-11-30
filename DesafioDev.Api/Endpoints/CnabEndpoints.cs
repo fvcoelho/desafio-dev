@@ -21,9 +21,11 @@ public static class CnabEndpoints
         group.MapPost("/upload", UploadCnabFile)
             .WithName("UploadCnabFile")
             .WithSummary("Upload and process a CNAB file")
-            .WithDescription("Uploads a CNAB file, parses its contents, and stores the transactions in memory")
+            .WithDescription("Uploads a CNAB file, parses its contents, and stores the transactions in memory. Requires API Key authentication.")
             .Produces(200)
             .Produces(400)
+            .Produces(401)
+            .RequireAuthorization()
             .DisableAntiforgery()
             .WithOpenApi(operation =>
             {
@@ -57,8 +59,10 @@ public static class CnabEndpoints
         group.MapDelete("/clear", ClearData)
             .WithName("ClearData")
             .WithSummary("Clear all data")
-            .WithDescription("Clears all stored transactions and stores (for testing)")
-            .Produces(200);
+            .WithDescription("Clears all stored transactions and stores (for testing). Requires API Key authentication.")
+            .Produces(200)
+            .Produces(401)
+            .RequireAuthorization();
     }
 
     private static async Task<IResult> UploadCnabFile(

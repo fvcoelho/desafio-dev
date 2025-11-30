@@ -58,6 +58,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ApiSettings__BaseUrl=http://api:8080
+      - ApiSettings__ApiKey=financeapp-secret-key
     ports:
       - "5001:8080"
     depends_on:
