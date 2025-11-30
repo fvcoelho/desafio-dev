@@ -22,8 +22,14 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="fileInput" class="form-label">Select CNAB File (.txt)</label>
-                        <InputFile id="fileInput" OnChange="@HandleFileSelected" class="form-control" accept=".txt" />
+                        <label for="fileInput" class="form-label">Select CNAB File (.txt) <span class="text-danger">*</span></label>
+                        <InputFile id="fileInput" OnChange="@HandleFileSelected" class="@($"form-control {(showFileValidation && selectedFile == null ? "is-invalid" : "")}")" accept=".txt" />
+                        @if (showFileValidation && selectedFile == null)
+                        {
+                            <div class="invalid-feedback d-block">
+                                Please select a CNAB file to upload.
+                            </div>
+                        }
                         <div class="form-text">
                             Don't have a CNAB file? <a href="/CNAB.txt" download="CNAB.txt" class="text-decoration-none">Download a sample file</a>
                         </div>
@@ -56,7 +62,7 @@
                     }
 
                     <div class="d-grid gap-2">
-                        <button class="btn btn-primary btn-lg" @onclick="UploadFile" disabled="@(selectedFile == null || isUploading)">
+                        <button class="btn btn-primary btn-lg" @onclick="UploadFile" disabled="@isUploading">
                             @if (isUploading)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -158,6 +164,7 @@
     private bool isUploading = false;
     private bool isClearing = false;
     private bool clearSuccess = false;
+    private bool showFileValidation = false;
     private string? errorMessage;
     private UploadResponse? uploadResult;
     private List<StoreBalance>? stores;
@@ -173,6 +180,7 @@
     private void HandleFileSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
+        showFileValidation = false;
         errorMessage = null;
         uploadResult = null;
         StateHasChanged();
@@ -180,6 +188,7 @@
 
     private async Task UploadFile()
     {
+        showFileValidation = true;
         if (selectedFile == null) return;
 
         isUploading = true;
