@@ -155,6 +155,29 @@
                     </div>
                 </div>
             }
+
+            <div class="card mt-4">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Quick Install</h4>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li class="mb-2">
+                            <strong>Clone the repository</strong>
+                            <pre class="bg-light p-2 rounded mt-1 mb-0"><code>git clone -b main_deploy https://github.com/fvcoelho/desafio-dev</code></pre>
+                        </li>
+                        <li class="mb-2">
+                            <strong>Navigate to the project</strong>
+                            <pre class="bg-light p-2 rounded mt-1 mb-0"><code>cd desafio-dev</code></pre>
+                        </li>
+                        <li>
+                            <strong>Run with Docker</strong>
+                            <pre class="bg-light p-2 rounded mt-1 mb-0"><code>docker-compose up -d --build</code></pre>
+                            <small class="text-muted">Then open <a href="http://localhost:5001" target="_blank">http://localhost:5001</a></small>
+                        </li>
+                    </ol>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -264,6 +287,7 @@
         isClearing = true;
         errorMessage = null;
         clearSuccess = false;
+        showFileValidation = false;
 
         try
         {
